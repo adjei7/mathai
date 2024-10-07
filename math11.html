@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Math Quiz with AI Feedback</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+		/* Body Styling */
+        body {
+            background-color: #1a1a1a;
+            color: #f0f0f0;
+            font-family: 'Roboto', sans-serif;
+        }
+        
+        /* Feedback and AI Advice */
+        #feedback {
+            margin-bottom: 10px;
+            font-size: 1.25rem;
+            color: #00ff00;
+        }
+        
+        #ai-advice {
+            margin-top: 10px;
+            font-size: 1.25rem;
+            color: #00bfff;
+        }
+        
+        /* Chat Toggle Button */
+        #toggle-chat {
+            padding: 4px 8px;
+            font-size: 0.75rem;
+            border-radius: 4px;
+            background-color: #4CAF50;
+            width: auto;
+        }
+        
+        #toggle-chat:hover {
+            background-color: #45a049;
+        }
+        
+        /* AI Metrics */
+        .ai-metrics {
+            color: #000;
+            padding: 10px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            width: 100%;
+        }
+        
+        /* Reward Box Styling */
+        .reward-box {
+            /*background-color: #f0f0f0;*/
+            padding: 4px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            color: white;
+            margin-top: 20px; /* Add some margin to separate it from the section above */
+            width: 100%;
+            position: relative;
+            z-index: 1;
+        }
+        
+        /* Flex Layout for Score and Level */
+        .flex {
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        /* Ensure Proper Spacing and Responsiveness */
+        .bg-gray-800 {
+            padding-bottom: 80px; /* Ensure enough space at the bottom */
+            margin-bottom: 20px; /* Space between content and reward box */
+        }
+        
+        #challenge-container {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        @media (max-width: 768px) {
+            .flex {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+        
+            .ai-metrics, .reward-box {
+                text-align: center;
+            }
+        }
+
+	</style>
+
+</head>
+<body class="flex items-center justify-center min-h-screen">
+	<!-- App Description Section -->
+    <div class="rounded-lg shadow-lg fixed top-0 left-0 right-0">
+        <div class="flex">
+            <div>
+                <h2 class="text-2xl font-bold mb-2">AI-Driven Math App Demo</h2>
+                <p id="app-description">
+                    This app uses AI to dynamically adjust the (1) feedback, (2) difficulty level, (3) the threshold time for rewards and (4) the triggering of a timed challenge to maintain motivation, all based on per question student performance!
+                    <span style="color: lightblue"> Please note the main purpose of this app is for testing AI adapting motivation techniques and not as a live student assement platform. </span>
+                </p>
+            </div>
+            <div>
+                <button data-tooltip-target="tooltip-default" id="start-challenge" class="p-2 bg-red-600 text-xs text-white rounded hover:bg-red-700 mt-4">MTC</button>
+            </div>
+        </div>
+            <!-- Reward Box for Clock Smiley Faces -->
+    <div class="reward-box border-white border-2  rounded-lg shadow-lg mt-4">
+        <span id="smiley-counter" class="text-xl font-bold">Speed⚡Rewards: </span>
+        <span id="smiley-icons"></span>
+    </div>
+    </div>
+    
+    <!-- AI-Controlled Metrics Section -->
+    <div class="ai-metrics  rounded-lg shadow-lg w-full mt-4 fixed bottom-0">
+        <div class="flex justify-between text-sm">
+            <p class="font-bold" style="color:white;">AI-Controlled Features:</p>
+            <p style="color:white;">Level Changes: <span id="level-changes">0</span></p>
+            <p style="color:white;">Current Time Threshold: <span id="time-threshold">5</span> seconds</p>
+            <p style="color:white;">Time Threshold Changes: <span id="threshold-changes">0</span></p>
+            <p style="color:white;">Timed Challenges Triggered: <span id="challenge-count">0</span></p>
+        </div>
+    </div>
+
+	<!-- Button to trigger the timed challenge manually -->
+
+    <div class="bg-gray-800 p-8 rounded-lg shadow-lg min-w-96 max-w-3xl mt-16">
+	<!-- The div that wraps the challenge elements -->
+	<div id="challenge-container" style="display: none;">
+		<div id="challenge-status" class="text-xl mb-4" style="transition: opacity 2s;"></div>
+		<div id="challenge-timer" class="text-lg text-red-500"></div>
+		<div id="correct-answer-counter" class="text-lg text-green-500">Correct Answers: 0</div>
+	</div>
+
+
+        <div class="flex space-x-4 mb-4">
+            <div id="score-container">
+                <div class="text-xl">Score: <span id="score">0</span></div>
+            </div>
+            <div id="level-container">
+                <div class="text-xl">Level: <span id="level">1</span></div>
+            </div>
+        </div>
+
+
+        <div id="question" class="text-2xl mb-4">What is 5 + 3?</div>
+        <div class="flex space-x-4 mb-4">
+            <input id="answer" type="number" class="w-full p-2 bg-gray-700 text-white rounded h-12" placeholder="Your answer">
+            <button id="submit" class="p-2 bg-blue-600 text-white rounded hover:bg-blue-700 h-12">Submit</button>
+        </div>
+        <div class="">
+            <span id="feedback" class="mt-4 text-lg"></span>
+            <span id="ai-advice" class="mt-4 text-lg text-blue-400"></span>
+        </div>
+						
+
+    </div>
+	<!-- Collapsible Chat Window -->
+	<div class="bg-gray-800  rounded-lg shadow-lg mt-8">
+		<!-- Smaller Toggle Button for Collapsible Chat Window -->
+		<button id="toggle-chat" class="p-1 px-2 bg-green-600 text-white rounded hover:bg-green-700 mb-4 text-sm">Chat</button>
+
+		
+		<div id="chat-container" style="display: none;">
+			<h2 class="text-2xl mb-4">Interrogate AI on Student Data</h2>
+			<textarea id="chat-input" rows="4" class="w-full p-2 mb-4 bg-gray-700 text-white rounded" placeholder="Ask the AI about the student's performance..."></textarea>
+			<button id="chat-submit" class="w-full p-2 bg-blue-600 text-white rounded hover:bg-blue-700">Submit Query</button>
+			<div id="chat-response" class="mt-4 text-lg text-blue-400"></div>
+		</div>
+	</div>
+
+
+
+
+
+
+    <script type="module">
+        // Function to generate random integer between min and max, inclusive
+        function getRandomInt(min, max) {
+            return Math.floor(Math.random() * (max - min + 1)) + min;
+        }
+
+        // Define different types of questions
+        const questionTypes = ['simple', 'largeNumbers', 'carry'];
+
+        // Track number of questions answered
+        let questionsAnswered = 0;
+		let startTime;
+		let currentTimeThreshold = 5;  // Start with the default 5 seconds
+		let isChallengeActive = false;  // Flag to track if a timed challenge is active
+		let challengeInterval = null;   // Variable to store the interval ID
+		let questionsAnsweredInChallenge = 0;  // Total questions answered during the challenge (right or wrong)
+		let correctQuestionsInChallenge = 0;  // Correctly answered questions during the challenge
+
+		// Get the reference to the new "Start Timed Challenge" button
+		const startChallengeButton = document.getElementById('start-challenge');
+
+
+
+
+
+
+
+        // Store the entire conversation history
+        let conversationHistory = [];
+
+        // Define the system message with the introduction, sent once at the start
+        const systemMessage = {
+			role: 'system',
+			content: `
+				You are a helpful math tutor designed for children. Your task is to assess an 8-year-old student answering math questions. The student starts at level 1, with level 1 being the easiest and level 10 the hardest.
+
+				Your job is to decide if the student should move up a level (++), stay in the same level, or move down a level (--), based on their performance.
+
+				The rules for level adjustment are:
+				- **Increase the level (++)**: Include "++" in your response if the student answers **at least 4 questions in a row correctly** at the current level.
+				- **Decrease the level (--)**: Include "--" in your response if the student answers **at least 4 questions in a row incorrectly** at the current level.
+				- **Stay at the same level**: If the student has a mix of correct and incorrect answers within the current level, do not include "++" or "--". Keep the student at the same level.
+
+				Make sure to always include "++" if increasing the level or "--" if decreasing the level, at the end of your response.
+
+				After every question, analyze the student's recent performance at their current level. If they meet the criteria for moving up or down, include "++" or "--" in your response accordingly. If they do not meet these criteria, provide feedback without changing their level.
+
+				Keep your responses short, simple, and encouraging. Use no more than 3 sentences per response, and avoid using technical language.
+				
+				The student has a special reward: if they answer a question correctly within a certain time threshold, they earn a lightning emoji (⚡). 
+				You can dynamically adjust this time threshold based on the student's performance, but be strict with when you make adjustments:
+				
+				- Only lower the time threshold (include "^^" in your response) if the student answers at least **4 questions in a row** quickly and correctly, showing consistent fast performance.
+				- Only increase the time threshold (include "vv" in your response) if the student takes longer than the current threshold on at least **4 questions in a row**, showing consistent slow performance.
+
+				Do not adjust the time threshold unless the student's performance meets these strict criteria. 
+
+				Additionally, continue using "++" to indicate a level increase and "--" for a level decrease based on the student's overall performance.
+				
+				You need to monitor the student's response time and engagement:
+        
+				- If the student's typical response time in a particular level is around 6 seconds, but they start taking much longer (e.g., 20-30 seconds), this could indicate boredom or lack of motivation.
+				- If you detect this pattern, suggest a timed challenge mode by including "##challenge##" in your response. The timed challenge will require the student to answer 10 questions within 60 seconds to avoid penalties or earn rewards.
+				-However, please note that the time threshold in the student data is not a max time that the student has to answer, but a time frame to award the emoji. So if they take longer than the time threshold consistently, then it is better to increase the time threshold.
+				Only invoke the challenge if the time delay is much longer than their usual time taken to answer a question, for example 4 or 5 times longer than usual.
+				
+				Continue providing feedback on level changes (using ++ or --) and dynamic time threshold adjustments (using ^^ or vv).
+			`
+		};
+
+
+        // Generate questions categorized by type (for AI analysis later)
+        const questions = [];
+        for (let i = 1; i <= 10; i++) {  // Assume each loop iteration represents the level
+            for (let j = 0; j < 10; j++) {
+                let num1 = getRandomInt(i * 1, i * 10);
+                let num2 = getRandomInt(i * 1, i * 10);
+                let questionType = num1 >= 10 && num2 >= 10 ? 'largeNumbers' : (num1 + num2 > 10 ? 'carry' : 'simple');
+                
+                // Add the level property to each question
+                questions.push({ 
+                    question: `What is ${num1} + ${num2}?`, 
+                    answer: num1 + num2, 
+                    type: questionType,
+                    level: i  // Set the level to the current iteration value
+                });
+            }
+        }
+
+        // Performance history for each question type (used by AI to analyze)
+        const performanceHistory = {
+            simple: { correct: 0, incorrect: 0 },
+            largeNumbers: { correct: 0, incorrect: 0 },
+            carry: { correct: 0, incorrect: 0 }
+        };
+
+        let score = 0;
+        let currentLevel = 1;
+		// Variable to track the number of smiley icons earned
+		let smileyCount = 0;
+		
+		// Track AI-controlled metrics
+        let levelChanges = 0;
+        let timeThresholdChanges = 0;
+        let timedChallengesTriggered = 0;
+        
+        // Elements to update AI metrics in the UI
+        const levelChangesElement = document.getElementById('level-changes');
+        const timeThresholdElement = document.getElementById('time-threshold');
+        const thresholdChangesElement = document.getElementById('threshold-changes');
+        const challengeCountElement = document.getElementById('challenge-count');
+
+
+        const scoreElement = document.getElementById('score');
+        const levelElement = document.getElementById('level');
+        const questionElement = document.getElementById('question');
+        const answerElement = document.getElementById('answer');
+        const feedbackElement = document.getElementById('feedback');
+        const aiAdviceElement = document.getElementById('ai-advice');
+        const submitButton = document.getElementById('submit');
+
+        let currentQuestion = {};
+
+        function loadQuestion() {
+            const availableQuestions = questions.filter(q => q.level === currentLevel);
+
+            if (availableQuestions.length === 0) {
+                console.error('No available questions for the current level.');
+                return;
+            }
+
+            const randomIndex = getRandomInt(0, availableQuestions.length - 1);
+            currentQuestion = availableQuestions[randomIndex];
+
+            questionElement.textContent = currentQuestion.question;
+            answerElement.value = '';
+            
+			// Record the start time when the question is loaded
+			startTime = new Date();
+        }
+
+        function updateScore() {
+            scoreElement.textContent = score;
+        }
+
+        function updateLevel() {
+            levelElement.textContent = currentLevel;
+        }
+
+            // Function to call your PHP backend for OpenAI response
+		async function getAIResponse(conversationMessages) {
+			try {
+				const response = await fetch('openai.php', {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json'
+					},
+					body: JSON.stringify({ conversationMessages })  // Send conversation messages to the PHP backend
+				});
+
+				const data = await response.json();
+				console.log('AI Response:', data);
+
+				// Handle the AI's response here
+				return data;
+
+			} catch (error) {
+				console.error('Error fetching AI response:', error);
+			}
+		}
+		
+		// AI-driven analysis: Detect patterns in mistakes and fetch advice using OpenAI API
+        async function analyzePerformance(isCorrect, questionType, performanceHistory, studentAnswer, timeTaken) {
+            
+
+            // Update performance history for the current question type
+            if (isCorrect) {
+                performanceHistory[questionType].correct++;
+            } else {
+                performanceHistory[questionType].incorrect++;
+            }
+			
+			// Append the latest question, student's answer, and level to the conversation history
+            conversationHistory.push({
+                role: 'user',
+                content: `Question: ${currentQuestion.question}. Student's answer: ${studentAnswer}. Correct answer: ${currentQuestion.answer}. Level: ${currentLevel}. Time taken: ${timeTaken} seconds. Current time threshold: ${currentTimeThreshold} seconds.`
+            });
+			
+			console.log(conversationHistory);
+
+            // Only give advice if 4 or more questions have been answered
+            if (questionsAnswered < 5) {
+                return '';  // Return empty string to skip advice
+            }
+
+            const conversationMessages = [systemMessage, ...conversationHistory]; // Include systemMessage once and all conversations
+			
+			console.log(conversationMessages);
+            
+			//replacing code below with external management of api call
+			
+			const data = await getAIResponse(conversationMessages);
+
+			const advice = data.choices[0].message.content.trim();
+			console.log('AI Advice:', advice);
+			
+			// Trigger the timed challenge if the AI suggests it
+			if (advice.includes('##challenge##')) {
+				timedChallengesTriggered++;
+                challengeCountElement.textContent = timedChallengesTriggered;
+				startTimedChallenge();  // Automatically start timed challenge
+			}
+			
+			// Check if the AI suggests adjusting the time threshold
+			if (advice.includes('^^')) {
+				currentTimeThreshold = Math.max(3, currentTimeThreshold - 1);  // Decrease threshold, minimum of 3 seconds
+				console.log('Time threshold decreased to:', currentTimeThreshold);
+			} else if (advice.includes('vv')) {
+				currentTimeThreshold = Math.min(10, currentTimeThreshold + 1);  // Increase threshold, max of 10 seconds
+				console.log('Time threshold increased to:', currentTimeThreshold);
+			}
+			
+			// Level change
+            if (advice.includes('++')) {
+                currentLevel = Math.min(currentLevel + 1, 10);
+                levelChanges++;
+                levelChangesElement.textContent = levelChanges;
+            } else if (advice.includes('--')) {
+                currentLevel = Math.max(currentLevel - 1, 1);
+                levelChanges++;
+                levelChangesElement.textContent = levelChanges;
+            }
+            
+            updateLevel();
+            
+            // Time threshold change
+            if (advice.includes('^^')) {
+                currentTimeThreshold = Math.max(3, currentTimeThreshold - 1);
+                timeThresholdChanges++;
+                timeThresholdElement.textContent = currentTimeThreshold;
+                thresholdChangesElement.textContent = timeThresholdChanges;
+            } else if (advice.includes('vv')) {
+                currentTimeThreshold = Math.min(10, currentTimeThreshold + 1);
+                timeThresholdChanges++;
+                timeThresholdElement.textContent = currentTimeThreshold;
+                thresholdChangesElement.textContent = timeThresholdChanges;
+            }
+
+
+			// Append AI's advice to the conversation history
+			conversationHistory.push({
+				role: 'assistant',
+				content: advice
+			});
+
+			return advice;
+        }
+
+        // Checking the answer and updating the performance
+        async function checkAnswer() {
+		console.log('check answer being called here');
+			const studentAnswer = parseInt(answerElement.value, 10);  // Capture the student's actual answer
+			const correctAnswer = currentQuestion.answer;
+			const isCorrect = studentAnswer === correctAnswer;  // Determine if the answer is correct
+			questionsAnswered++;  // Increment the number of questions answered
+			
+			// Calculate time taken to answer
+			const endTime = new Date();
+			const timeTaken = (endTime - startTime) / 1000;  // Time taken in seconds
+			console.log(`Time taken: ${timeTaken} seconds`);
+			console.log(`Time Threshold: ${currentTimeThreshold} seconds`);
+			
+			// Check if the answer is correct and under 5 seconds
+			awardSmileyIfFast(timeTaken, isCorrect);
+
+			// Log the feedback being applied
+			if (isCorrect) {
+				score++;
+				feedbackElement.textContent = 'Correct!';
+				feedbackElement.classList.add('text-green-500');
+				feedbackElement.classList.remove('text-red-500');
+				console.log('Feedback set to: Correct!');
+			} else {
+				feedbackElement.textContent = 'Incorrect!';
+				feedbackElement.classList.add('text-red-500');
+				feedbackElement.classList.remove('text-green-500');
+				console.log('Feedback set to: Incorrect!');
+			}
+
+			// Always update the score and level for every question
+			updateScore();
+			//updateLevel();
+
+			// Get AI advice after 1 or more questions have been answered
+			if (questionsAnswered >= 1) {
+				const advice = await analyzePerformance(isCorrect, currentQuestion.type, performanceHistory, studentAnswer, timeTaken);
+				if (advice) {
+					aiAdviceElement.textContent = advice;
+                    
+                    // Update the displayed level after any changes
+                   // updateLevel();
+				}
+			}
+
+			// Load the next question regardless of feedback
+			loadQuestion();
+		}
+		
+		// Function to award the clock smiley for fast correct answers
+		function awardSmileyIfFast(timeTaken, isCorrect) {
+			if (isCorrect && timeTaken <= currentTimeThreshold) { //the variable timethreshold should be used here, not the actual number 5
+				smileyCount++;
+				const smileyIcons = document.getElementById('smiley-icons');
+				smileyIcons.innerHTML += '⚡';  // Add clock and smiley face icon to the reward box
+				console.log(`Lightning emoji awarded! Total smileys: ${smileyCount}`);
+			}
+		}
+
+		// Add event listener to the input field to listen for Enter key press
+		answerElement.addEventListener('keypress', function(event) {
+			if (event.key === 'Enter') {
+				event.preventDefault();  // Prevent the default behavior
+
+				// Check if the timed challenge is active
+				if (isChallengeActive) {
+					checkAnswerDuringChallenge();  // Trigger challenge-specific answer function
+				} else {
+					checkAnswer();  // Trigger the regular answer function
+				}
+			}
+		});
+		
+        submitButton.addEventListener('click', checkAnswer);
+		
+		// Get references to the chat window elements
+		const chatInput = document.getElementById('chat-input');
+		const chatSubmit = document.getElementById('chat-submit');
+		const chatResponse = document.getElementById('chat-response');
+
+		// Function to send the chat query to the AI and get a response
+		async function handleChatQuery() {
+			const query = chatInput.value.trim();
+
+			if (query.length === 0) {
+				chatResponse.textContent = "Please enter a query.";
+				return;
+			}
+
+			// Append the user's query to the conversation history
+			conversationHistory.push({
+				role: 'user',
+				content: query
+			});
+
+			const conversationMessages = [systemMessage, ...conversationHistory]; // Include systemMessage and the full conversation history
+			
+			const data = await getAIResponse(conversationMessages);
+
+			const aiReply = data.choices[0].message.content.trim();
+
+			console.log('AI Chat Response:', aiReply);
+
+			// Display AI's response in the chat window
+			chatResponse.textContent = aiReply;
+
+			// Append AI's response to the conversation history
+			conversationHistory.push({
+				role: 'assistant',
+				content: aiReply
+			});
+
+		}
+		
+		// Function to start the timed challenge
+		function startTimedChallenge() {
+			// If a challenge is already active, don't start another one
+			if (isChallengeActive) {
+				console.log('Challenge is already active.');
+				return;
+			}
+			//only monitor on ai section when ai triggers the timed challenge
+			//timedChallengesTriggered++;
+            //challengeCountElement.textContent = timedChallengesTriggered;
+
+
+			// Set the flag to indicate that a challenge is active
+			isChallengeActive = true;
+
+			let timeRemaining = 60;  // Total time for the challenge (60 seconds)
+			questionsAnsweredInChallenge = 0;  // Reset total questions answered at the start of the challenge
+			correctQuestionsInChallenge = 0;   // Reset correct answers at the start of the challenge
+
+			const totalChallengeQuestions = 10;  // Number of questions for the challenge
+
+			// Hide the score and level containers during the timed challenge (this will hide both labels and values)
+			document.getElementById('score-container').style.display = 'none';
+			document.getElementById('level-container').style.display = 'none';
+
+			// Reset the correct answer counter and challenge status in the UI
+			document.getElementById('correct-answer-counter').textContent = `Correct Answers: 0`;
+
+			// Show the challenge container and its elements
+			document.getElementById('challenge-container').style.display = 'block';
+			document.getElementById('challenge-status').style.opacity = '1';  // Reset opacity to make it visible
+
+			// Change the background color to light red during the timed challenge
+			document.body.style.backgroundColor = '#e04949';  // Light red
+
+			// Add timer images to the left and right sides of the screen
+			const timerLeft = document.createElement('img');
+			const timerRight = document.createElement('img');
+			timerLeft.src = 'https://upload.wikimedia.org/wikipedia/commons/7/7a/Alarm_Clock_GIF_Animation_High_Res.gif';  // Replace with your timer image URL
+			timerRight.src = 'https://upload.wikimedia.org/wikipedia/commons/7/7a/Alarm_Clock_GIF_Animation_High_Res.gif';  // Replace with your timer image URL
+
+			timerLeft.id = 'timer-left';
+			timerRight.id = 'timer-right';
+
+			// Add styles for positioning
+			timerLeft.style.position = 'absolute';
+			timerLeft.style.left = '0';
+			timerLeft.style.top = '50%';
+			timerLeft.style.transform = 'translateY(-50%)';
+			timerLeft.style.width = '300px';  // Adjust size as needed
+
+			timerRight.style.position = 'absolute';
+			timerRight.style.right = '0';
+			timerRight.style.top = '50%';
+			timerRight.style.transform = 'translateY(-50%)';
+			timerRight.style.width = '300px';  // Adjust size as needed
+
+			// Append the images to the body
+			document.body.appendChild(timerLeft);
+			document.body.appendChild(timerRight);
+
+			// Update the UI to reflect the timed challenge mode
+			document.getElementById('challenge-status').textContent = `Timed Challenge: Answer ${totalChallengeQuestions} questions in ${timeRemaining} seconds!`;
+
+			// Clear any existing intervals (just in case)
+			if (challengeInterval) {
+				clearInterval(challengeInterval);
+			}
+
+			// Set a new interval to update the timer
+			challengeInterval = setInterval(() => {
+				timeRemaining--;
+				document.getElementById('challenge-timer').textContent = `Time Left: ${timeRemaining}s`;
+
+				if (timeRemaining <= 0 || questionsAnsweredInChallenge >= totalChallengeQuestions) {
+					clearInterval(challengeInterval);
+					endTimedChallenge(questionsAnsweredInChallenge, totalChallengeQuestions);
+				}
+			}, 1000);  // Update every second
+
+			// Replace the regular checkAnswer function for the challenge
+			submitButton.removeEventListener('click', checkAnswer);  // Remove the regular checkAnswer listener
+			submitButton.addEventListener('click', checkAnswerDuringChallenge);  // Add the challenge-specific listener
+		}
+
+
+
+		// Function to end the timed challenge
+		function endTimedChallenge(questionsAnsweredInChallenge, totalChallengeQuestions) {
+			const challengeResult = document.getElementById('challenge-status');
+			const challengeContainer = document.getElementById('challenge-container');
+
+			// Display the challenge result, showing both total and correct questions answered
+			challengeResult.textContent = `Challenge finished! You answered ${questionsAnsweredInChallenge} questions, with ${correctQuestionsInChallenge} correct answers.`;
+
+			// Show the score and level containers again after the challenge ends
+			document.getElementById('score-container').style.display = 'block';
+			document.getElementById('level-container').style.display = 'block';
+
+			// Clear the AI feedback at the end of the timed challenge
+			document.getElementById('ai-advice').textContent = '';
+
+			// Determine if the student was successful in the challenge
+			let success = correctQuestionsInChallenge >= totalChallengeQuestions;
+
+			// Create the image element for the GIF
+			const gifImage = document.createElement('img');
+			gifImage.style.position = 'fixed';
+			gifImage.style.top = '50%';
+			gifImage.style.left = '50%';
+			gifImage.style.transform = 'translate(-50%, -50%)';
+			gifImage.style.zIndex = '1000'; // Make sure it's on top of everything
+			gifImage.style.width = '200px'; // Adjust the size as necessary
+
+			// Display a success GIF if the student was successful
+			if (success) {
+				gifImage.src = 'https://i.gifer.com/8OJO.gif';  // Replace with your success GIF URL
+			} else {
+				// Display a failure GIF if the student was not successful
+				gifImage.src = 'https://media1.tenor.com/m/gauSQOMqvlgAAAAd/thumbs-down.gif';  // Replace with your failure GIF URL
+			}
+
+			// Append the GIF to the body
+			document.body.appendChild(gifImage);
+
+			// Remove the GIF after 5 seconds
+			setTimeout(() => {
+				gifImage.remove();
+			}, 5000);  // Display for 5 seconds
+
+			// Hide the challenge container after the challenge ends and fade out challenge text after 5 seconds
+			setTimeout(() => {
+				challengeResult.style.opacity = '0';  // Fade out the challenge status after 5 seconds
+				challengeContainer.style.display = 'none';  // Hide the entire challenge container after fade-out
+			}, 5000);  // Set fade-out to 5 seconds
+
+			// Revert the background color to black after the challenge ends
+			document.body.style.backgroundColor = '#1a1a1a';  // Black
+
+			// Remove the timer images from the DOM
+			const timerLeft = document.getElementById('timer-left');
+			const timerRight = document.getElementById('timer-right');
+			if (timerLeft) timerLeft.remove();
+			if (timerRight) timerRight.remove();
+
+			// Restore the original checkAnswer function after the challenge
+			submitButton.removeEventListener('click', checkAnswerDuringChallenge);
+			submitButton.addEventListener('click', checkAnswer);
+
+			// Reset the challenge flag and interval
+			isChallengeActive = false;  // Reset the flag so a new challenge can be triggered later
+			clearInterval(challengeInterval);  // Clear the interval (just in case)
+			challengeInterval = null;  // Reset the interval variable
+		}
+
+
+
+
+
+
+
+
+
+
+
+
+		
+		// Function to handle answering during the timed challenge
+		async function checkAnswerDuringChallenge() {
+			const studentAnswer = parseInt(answerElement.value, 10);  // Capture the student's actual answer
+			const correctAnswer = currentQuestion.answer;
+			const isCorrect = studentAnswer === correctAnswer;
+
+			// Award a smiley for fast and correct answers during the challenge
+			const endTime = new Date();
+			const timeTaken = (endTime - startTime) / 1000;
+			awardSmileyIfFast(timeTaken, isCorrect);
+
+			// Increment total questions answered during the challenge (right or wrong)
+			questionsAnsweredInChallenge++;  
+
+			// Increment the correct questions count if the answer is correct
+			if (isCorrect) {
+				correctQuestionsInChallenge++;
+				
+				// Update the correct answer counter on the UI
+				document.getElementById('correct-answer-counter').textContent = `Correct Answers: ${correctQuestionsInChallenge}`;
+			}
+
+			// Continue updating score and loading the next question
+			updateScore();
+			loadQuestion();
+		}
+
+
+		// Add event listener to trigger the timed challenge manually
+		startChallengeButton.addEventListener('click', startTimedChallenge);
+
+
+		// Add event listener to the chat submit button
+		chatSubmit.addEventListener('click', handleChatQuery);
+		
+		// Get references to the toggle button and chat container
+		const toggleChatButton = document.getElementById('toggle-chat');
+		const chatContainer = document.getElementById('chat-container');
+
+		// Toggle the visibility of the chat window
+		toggleChatButton.addEventListener('click', function() {
+			if (chatContainer.style.display === 'none') {
+				chatContainer.style.display = 'block';
+				toggleChatButton.textContent = 'Hide Chat';  // Change button text
+			} else {
+				chatContainer.style.display = 'none';
+				toggleChatButton.textContent = 'Show Chat';  // Change button text
+			}
+		});
+
+
+		
+        loadQuestion();
+    </script>
+</body>
+</html>

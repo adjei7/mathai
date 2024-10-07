@@ -13,7 +13,7 @@ Lighting emoji is given if you answer a question within a time threshold (5s).
 If you find the questions easy, the threshold is reduced (<5s).
 If you find the questions hard, the threshold is increased (>5s).
 Feedback is based on your performance, speed and level.
-If you take too long to answer questions the AI knows you can do, it can trigger the time trial, where you have to answer 10 questions in 60s.
+If you take too long to answer questions the AI knows you can do, it can trigger the time trial, where you have to answer 10 questions in 60s, to keep you focused.
 
 The AI uses all the test data: questions, correct answers and your answers, time taken to complete answer, question level, award threshold, and it's own feedback, for every question you do to decide what to do next.
 

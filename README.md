@@ -6,6 +6,15 @@ AI-Driven Math App Demo, where AI controls the feedback, levels and motivation f
 
 This app uses AI to dynamically adjust the (1) feedback, (2) difficulty level, (3) the threshold time for rewards and (4) the triggering of a timed challenge to maintain motivation, all based on per question student performance! Please note the main purpose of this app is for testing AI adapting motivation techniques and not as a live student assement platform.
 
+If the AI thinks you are worthy to move up a level, you move up.
+If the AI thinks you are worthy to move down a level, you move down.
+Lighting emoji is given if you answer a question within a time threshold (5s)
+If you find the questions easy, the threshold is reduced (<5s)
+If you find the questions hard, the threshold is increased (>5s)
+Feedback is based on your performance, speed and level.
+If you take too long to answer questions the AI knows you can do, it can trigger the time trial, where you have to answer 10 questions in 60s.
+You can trigger the timed challenge manually by clicking the MTC (Manual Timed Challenge) button
+
 You need an openAI API account for the app to work. Make sure you have GPT-4o enabled. If you want to use a different model, you can change it in the openai.php document
 
 1. Upload all files to the same folder on a server with PHP

@@ -19,7 +19,7 @@ The AI uses all the test data: questions, correct answers and your answers, time
 
 You can trigger the timed challenge manually by clicking the MTC (Manual Timed Challenge) button.
 
-The questions are generated via code at the beginning of each session. To restart a session, refresh the page.
+The questions are generated via code at the beginning of each session. The code generates 10 questions in each of 10 levels, totalling 100 questions, all addition ranging in difficulty. To restart a session, refresh the page.
 
 Click on the green chat button to open a chat window, where you can interrogate the AI about your performance. Ask it why it did what it did. Ask if for proof. E.g. 'How many questions did I get right?', 'Why did you start a timed trial?', 'Why did you not take me to the next level?'.
 

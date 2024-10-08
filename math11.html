@@ -84,7 +84,7 @@
         .chat-container {
             position: relative;
             z-index: 2; /* Ensure it is above other content */
-            margin-top: 20px; /* Space it away from the reward box */
+            margin: 10px !Important; /* Space it away from the reward box */
             /*border: 2px solid #ffffff; /* White border around the chat */
             border-radius: 10px; /* Rounded corners for a smoother look */
             /* box-shadow: 0px 4px 10px rgba(255, 255, 255, 0.5) !important;  Shadow effect for hovering */
@@ -94,7 +94,7 @@
         
         /* Add a class for when the chat is opened */
         .chat-opened {
-            box-shadow: 0px 0px 20px 8px #00ff00 !important; /* 0px 4px 10px rgba(255, 255, 255, 0.5) !important;  Shadow effect for hovering */
+            box-shadow: 0px 0px 20px 4px #00ff00 !important; /* 0px 4px 10px rgba(255, 255, 255, 0.5) !important;  Shadow effect for hovering */
         }
         
         .chat-message {
@@ -220,7 +220,7 @@
         <button id="toggle-chat" class="p-1 px-2 bg-green-600 text-white rounded hover:bg-green-700 mb-4 text-sm">Chat</button>
     
         <div id="chat-container" style="display: none;">
-            <h2 class="text-2xl mb-4">Interrogate AI on Student Data</h2>
+            <h2 class="text-2xl mb-4" style="color:#00ff00">Interrogate AI on Student Data</h2>
     
             <!-- Chat conversation display area -->
             <div id="chat-conversation" class="mb-4 p-2 bg-gray-700 text-white rounded overflow-auto"></div>
@@ -362,6 +362,11 @@
 
         let currentQuestion = {};
         
+        function resetQuestionTimer() {
+            startTime = new Date(); // Reset the timer to the current time
+            console.log('Question timer reset due to chat toggle.');
+        }
+        
         // Get references to the toggle button and chat container
         const toggleChatButton = document.getElementById('toggle-chat');
         const chatContainer = document.querySelector('.chat-container');
@@ -377,11 +382,14 @@
                 chatContainer.classList.add('chat-opened');
             } else {
                 chatContent.style.display = 'none';
-                toggleChatButton.textContent = 'Show Chat';
+                toggleChatButton.textContent = 'Chat';
         
                 // Remove the shadow when the chat is closed
                 chatContainer.classList.remove('chat-opened');
             }
+            
+            // Reset the question timer whenever the chat window is toggled
+            resetQuestionTimer();
         });
 
 

@@ -58,8 +58,8 @@
             justify-content: flex-start;
             color: white;
             margin-top: 20px; /* Add some margin to separate it from the section above */
-            width: 100%;
-            position: relative;
+            /*width: 100%;
+            position: relative;*/
             z-index: 1;
         }
         
@@ -78,6 +78,60 @@
         #challenge-container {
             max-height: 200px;
             overflow-y: auto;
+        }
+        
+            /* Chat Window Styling */
+        .chat-container {
+            position: relative;
+            z-index: 2; /* Ensure it is above other content */
+            margin-top: 20px; /* Space it away from the reward box */
+            /*border: 2px solid #ffffff; /* White border around the chat */
+            border-radius: 10px; /* Rounded corners for a smoother look */
+            /* box-shadow: 0px 4px 10px rgba(255, 255, 255, 0.5) !important;  Shadow effect for hovering */
+            background-color: #333; /* Ensure the background stands out */
+            padding: 20px;
+        }
+        
+        /* Add a class for when the chat is opened */
+        .chat-opened {
+            box-shadow: 0px 0px 20px 8px #00ff00 !important; /* 0px 4px 10px rgba(255, 255, 255, 0.5) !important;  Shadow effect for hovering */
+        }
+        
+        .chat-message {
+            padding: 8px;
+            border-radius: 5px;
+            margin-bottom: 8px;
+            max-width: 80%;
+            word-wrap: break-word;
+        }
+        
+        .user-message {
+            background-color: #ADD8E6; /* Light Blue for user */
+            align-self: flex-end; /* Aligns user messages to the right */
+            color: black;
+        }
+    
+        .ai-message {
+            background-color: #90EE90; /* Light Green for AI */
+            align-self: flex-start; /* Aligns AI messages to the left */
+            color: black;
+        }
+        
+        /* Flexbox for the text input and submit button */
+        .chat-input-container {
+            display: flex;
+            gap: 10px; /* Add space between text area and button */
+            align-items: center; /* Align button and text area vertically */
+        }
+    
+        /* Limit the height of the chat conversation box */
+        #chat-conversation {
+            height: 200px;
+            max-height: 200px;
+            overflow-y: auto; /* Adds scroll when content exceeds height */
+            background-color: #333;
+            padding: 10px;
+            border-radius: 5px;
         }
         
         @media (max-width: 768px) {
@@ -160,19 +214,25 @@
 						
 
     </div>
-	<!-- Collapsible Chat Window -->
-	<div class="bg-gray-800  rounded-lg shadow-lg mt-8">
-		<!-- Smaller Toggle Button for Collapsible Chat Window -->
-		<button id="toggle-chat" class="p-1 px-2 bg-green-600 text-white rounded hover:bg-green-700 mb-4 text-sm">Chat</button>
+    <!-- Collapsible Chat Window -->
+    <div class="chat-container bg-gray-800 p-4 rounded-lg shadow-lg mt-8">
+        <!-- Smaller Toggle Button for Collapsible Chat Window -->
+        <button id="toggle-chat" class="p-1 px-2 bg-green-600 text-white rounded hover:bg-green-700 mb-4 text-sm">Chat</button>
+    
+        <div id="chat-container" style="display: none;">
+            <h2 class="text-2xl mb-4">Interrogate AI on Student Data</h2>
+    
+            <!-- Chat conversation display area -->
+            <div id="chat-conversation" class="mb-4 p-2 bg-gray-700 text-white rounded overflow-auto"></div>
+    
+            <!-- Chat input and submit button -->
+            <div class="chat-input-container">
+                <textarea id="chat-input" rows="1" class="w-full p-2 bg-gray-700 text-white rounded resize-none" placeholder="Ask the AI..."></textarea>
+                <button id="chat-submit" class="p-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm">Submit</button>
+            </div>
+        </div>
+    </div>
 
-		
-		<div id="chat-container" style="display: none;">
-			<h2 class="text-2xl mb-4">Interrogate AI on Student Data</h2>
-			<textarea id="chat-input" rows="4" class="w-full p-2 mb-4 bg-gray-700 text-white rounded" placeholder="Ask the AI about the student's performance..."></textarea>
-			<button id="chat-submit" class="w-full p-2 bg-blue-600 text-white rounded hover:bg-blue-700">Submit Query</button>
-			<div id="chat-response" class="mt-4 text-lg text-blue-400"></div>
-		</div>
-	</div>
 
 
 
@@ -301,6 +361,29 @@
         const submitButton = document.getElementById('submit');
 
         let currentQuestion = {};
+        
+        // Get references to the toggle button and chat container
+        const toggleChatButton = document.getElementById('toggle-chat');
+        const chatContainer = document.querySelector('.chat-container');
+        
+        // Toggle the visibility of the chat window and add shadow when opened
+        toggleChatButton.addEventListener('click', function () {
+            const chatContent = document.getElementById('chat-container');
+            if (chatContent.style.display === 'none') {
+                chatContent.style.display = 'block';
+                toggleChatButton.textContent = 'Hide Chat';
+        
+                // Add the shadow when the chat is opened
+                chatContainer.classList.add('chat-opened');
+            } else {
+                chatContent.style.display = 'none';
+                toggleChatButton.textContent = 'Show Chat';
+        
+                // Remove the shadow when the chat is closed
+                chatContainer.classList.remove('chat-opened');
+            }
+        });
+
 
         function loadQuestion() {
             const availableQuestions = questions.filter(q => q.level === currentLevel);
@@ -518,39 +601,67 @@
 		const chatSubmit = document.getElementById('chat-submit');
 		const chatResponse = document.getElementById('chat-response');
 
-		// Function to send the chat query to the AI and get a response
-		async function handleChatQuery() {
-			const query = chatInput.value.trim();
+		
+        // Function to send the chat query to the AI and get a response
+        async function handleChatQuery() {
+            const query = chatInput.value.trim(); // Get user input
+        
+            if (query.length === 0) {
+                chatResponse.textContent = "Please enter a query.";
+                return;
+            }
+        
+            // Append the user's query to the conversation history
+            conversationHistory.push({
+                role: 'user',
+                content: query
+            });
+        
+            const conversationMessages = [systemMessage, ...conversationHistory]; // Include systemMessage and the full conversation history
+        
+            // Show the user's query in the chat-conversation display
+            document.getElementById('chat-conversation').innerHTML += `<div class="chat-message user-message"><strong>You:</strong> ${query}</div>`;
+        
+            // Clear the input field after submitting the query
+            chatInput.value = '';
+        
+            try {
+                const data = await getAIResponse(conversationMessages);
+                const aiReply = data.choices[0].message.content.trim();
+                console.log('AI Chat Response:', aiReply);
+        
+                // Display AI's response in the chat window
+                document.getElementById('chat-conversation').innerHTML += `<div class="chat-message ai-message"><strong>AI:</strong> ${aiReply}</div>`;
+        
+                // Append AI's response to the conversation history
+                conversationHistory.push({
+                    role: 'assistant',
+                    content: aiReply
+                });
+        
+            } catch (error) {
+                console.error('Error with OpenAI API:', error);
+                document.getElementById('chat-conversation').innerHTML += `<div class="chat-message ai-message"><strong>AI:</strong> There was an issue retrieving AI advice. Please try again.</div>`;
+            }
+        
+            // Scroll the conversation area to the bottom to show the latest message
+            const chatConversation = document.getElementById('chat-conversation');
+            chatConversation.scrollTop = chatConversation.scrollHeight;
+        }
+        
+        // Add event listener to the submit button
+        chatSubmit.addEventListener('click', handleChatQuery);
+        
+        // Add event listener to handle Enter key in the text box
+        chatInput.addEventListener('keypress', function(event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();  // Prevent default behavior of adding a new line
+                handleChatQuery();  // Call the submit function
+            }
+        });
 
-			if (query.length === 0) {
-				chatResponse.textContent = "Please enter a query.";
-				return;
-			}
 
-			// Append the user's query to the conversation history
-			conversationHistory.push({
-				role: 'user',
-				content: query
-			});
 
-			const conversationMessages = [systemMessage, ...conversationHistory]; // Include systemMessage and the full conversation history
-			
-			const data = await getAIResponse(conversationMessages);
-
-			const aiReply = data.choices[0].message.content.trim();
-
-			console.log('AI Chat Response:', aiReply);
-
-			// Display AI's response in the chat window
-			chatResponse.textContent = aiReply;
-
-			// Append AI's response to the conversation history
-			conversationHistory.push({
-				role: 'assistant',
-				content: aiReply
-			});
-
-		}
 		
 		// Function to start the timed challenge
 		function startTimedChallenge() {
@@ -755,7 +866,7 @@
 		chatSubmit.addEventListener('click', handleChatQuery);
 		
 		// Get references to the toggle button and chat container
-		const toggleChatButton = document.getElementById('toggle-chat');
+		/*const toggleChatButton = document.getElementById('toggle-chat');
 		const chatContainer = document.getElementById('chat-container');
 
 		// Toggle the visibility of the chat window
@@ -767,7 +878,7 @@
 				chatContainer.style.display = 'none';
 				toggleChatButton.textContent = 'Show Chat';  // Change button text
 			}
-		});
+		});*/
 
 
 		

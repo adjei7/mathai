@@ -23,6 +23,8 @@ The questions are generated via code at the beginning of each session. The code 
 
 Click on the green chat button to open a chat window, where you can interrogate the AI about your performance. Ask it why it did what it did. Ask if for proof. E.g. 'How many questions did I get right?', 'Why did you start a timed trial?', 'Why did you not take me to the next level?'.
 
+Opening or closing the interrogation window will reset the question timer, so that you will not be penalised during interrogation time. Otherwise the AI may trigger the time challenge.
+
 # Installation
 You need an openAI API account for the app to work. Make sure you have GPT-4o enabled. If you want to use a different model, you can change it in the openai.php document.
 

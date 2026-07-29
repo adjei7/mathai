@@ -1,6 +1,6 @@
 # mathai
 
-Demo: https://education.kowusu.com/mathai/math11.html
+Demo: https://education.kowusu.com/mathai
 
 AI-Driven Math App Demo, where AI controls the feedback, levels and motivation features.
 
@@ -30,7 +30,7 @@ You need an openAI API account for the app to work. Make sure you have GPT-4o en
 
 1. Upload all files to the same folder on a server with PHP.
 2. Add your OpenAI api key to apikey.php.
-3. navigate your browser to the math11.html file.
+3. navigate your browser to the folder mathai folder
 
 How the files work
 apikey.php - holds your apikey (Keep this private).

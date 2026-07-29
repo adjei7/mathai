@@ -1,0 +1,915 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Math Quiz with AI Feedback</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+    
+    <style>
+        html, body {
+            height: 100%;
+            overflow: hidden;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0b0f17;
+            color: #f1f5f9;
+        }
+
+        .font-mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* Custom scrollbars for chat and question containers */
+        ::-webkit-scrollbar {
+            width: 5px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.6);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(51, 65, 85, 0.8);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(71, 85, 105, 1);
+        }
+
+        /* Enhanced chat container transition styling */
+        .chat-container {
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .chat-opened {
+            box-shadow: 0 0 20px -3px rgba(16, 185, 129, 0.3), 0 0 8px -1px rgba(16, 185, 129, 0.2) !important;
+            border-color: rgba(16, 185, 129, 0.5) !important;
+        }
+
+        /* Chat bubble styles preserving original functionality */
+        .chat-message {
+            padding: 0.6rem 0.85rem;
+            border-radius: 0.75rem;
+            margin-bottom: 0.5rem;
+            max-width: 88%;
+            word-wrap: break-word;
+            font-size: 0.85rem;
+            line-height: 1.4;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+        }
+
+        .user-message {
+            background-color: #0284c7;
+            color: #ffffff;
+            margin-left: auto;
+            border-bottom-right-radius: 0.15rem;
+        }
+
+        .ai-message {
+            background-color: #1e293b;
+            border: 1px solid #334155;
+            color: #e2e8f0;
+            margin-right: auto;
+            border-bottom-left-radius: 0.15rem;
+        }
+
+        .chat-input-container {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        /* Responsive chat window scroll height */
+        #chat-conversation {
+            height: calc(100vh - 360px);
+            min-height: 140px;
+            max-height: 480px;
+            overflow-y: auto;
+        }
+
+        /* Glassmorphism styling */
+        .glow-card {
+            background: linear-gradient(135deg, rgba(30, 41, 59, 0.75) 0%, rgba(15, 23, 42, 0.85) 100%);
+            backdrop-filter: blur(12px);
+        }
+
+        .reward-box span#smiley-icons {
+            letter-spacing: 2px;
+            filter: drop-shadow(0 0 6px rgba(250, 204, 21, 0.6));
+        }
+
+        /* Light Theme Overrides */
+        body.light-theme {
+            background-color: #f1f5f9;
+            color: #0f172a;
+        }
+
+        body.light-theme .glow-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-color: #cbd5e1;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+        }
+
+        body.light-theme .bg-slate-900\/90,
+        body.light-theme .bg-slate-900\/80,
+        body.light-theme .bg-slate-900\/60,
+        body.light-theme .bg-slate-900\/95,
+        body.light-theme .bg-slate-950,
+        body.light-theme .bg-slate-950\/90,
+        body.light-theme .bg-slate-950\/95 {
+            background-color: #ffffff !important;
+            border-color: #e2e8f0 !important;
+            color: #0f172a !important;
+        }
+
+        body.light-theme .text-slate-100,
+        body.light-theme .text-slate-200,
+        body.light-theme .text-slate-300,
+        body.light-theme #question {
+            color: #0f172a !important;
+        }
+
+        body.light-theme .text-slate-400,
+        body.light-theme .text-slate-500 {
+            color: #475569 !important;
+        }
+
+        body.light-theme input#answer,
+        body.light-theme textarea#chat-input {
+            background-color: #f8fafc !important;
+            color: #0f172a !important;
+            border-color: #cbd5e1 !important;
+        }
+
+        body.light-theme footer {
+            background-color: rgba(255, 255, 255, 0.95) !important;
+            border-color: #e2e8f0 !important;
+        }
+
+        body.light-theme .reward-box {
+            background-color: #f8fafc !important;
+            border-color: #cbd5e1 !important;
+        }
+
+        /* Pill badge & Github link light mode contrast fix */
+        body.light-theme .pill-badge {
+            background-color: #e2e8f0 !important;
+            border-color: #cbd5e1 !important;
+            color: #334155 !important;
+        }
+
+        body.light-theme .pill-badge a {
+            color: #4338ca !important;
+        }
+
+        /* AI Assistant button light mode contrast fix */
+        body.light-theme #toggle-chat {
+            background-color: #059669 !important;
+            border-color: #047857 !important;
+            color: #ffffff !important;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+        }
+
+        body.light-theme #toggle-chat:hover {
+            background-color: #047857 !important;
+        }
+
+        body.light-theme .ai-message {
+            background-color: #f1f5f9 !important;
+            border-color: #cbd5e1 !important;
+            color: #0f172a !important;
+        }
+
+        body.light-theme #app-title {
+            color: #4f46e5 !important;
+        }
+    </style>
+</head>
+<body class="h-screen w-screen flex flex-col justify-between p-3 sm:p-4 pb-14 select-none">
+
+    <!-- App Header & Top Controls Bar -->
+    <header class="w-full shrink-0 mb-3">
+        <div class="glow-card border border-slate-800 rounded-xl p-3 sm:p-4 shadow-xl">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div class="space-y-0.5 max-w-3xl">
+                    <div class="flex items-center gap-2 flex-wrap mb-1">
+                        <h1 id="app-title" class="text-lg sm:text-xl font-extrabold text-indigo-400">
+                            AI-Driven Math App Demo
+                        </h1>
+                        <span class="pill-badge text-[11px] font-medium px-2 py-0.5 rounded-full bg-slate-800/80 text-slate-400 border border-slate-700/60 transition-colors">
+                            by K Owusu - GPLv3 - <a href="https://github.com/adjei7/mathai" target="_blank" class="text-indigo-400 hover:underline">github</a>
+                        </span>
+                    </div>
+                    <p id="app-description" class="text-xs text-slate-300 leading-relaxed">
+                        This app uses AI to dynamically adjust the (1) feedback, (2) difficulty level, (3) the threshold time for rewards and (4) the triggering of a timed challenge to maintain motivation, all based on per question student performance!
+                        <span class="text-sky-300 font-medium block sm:inline mt-0.5 sm:mt-0"> Please note the main purpose of this app is for testing AI adapting motivation techniques and not as a live student assessment platform.</span>
+                    </p>
+                </div>
+                
+                <div class="flex items-center gap-2 sm:gap-3 shrink-0 self-start sm:self-center">
+                    <!-- Light / Dark Mode Toggle Button -->
+                    <button id="theme-toggle" title="Toggle Light/Dark Mode" class="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 active:scale-95 text-xs font-bold text-slate-200 rounded-lg border border-slate-700 shadow-md transition flex items-center gap-1 shrink-0">
+                        <span id="theme-icon">☀️</span>
+                    </button>
+
+                    <!-- Speed Rewards Box -->
+                    <div class="reward-box border border-slate-700/60 bg-slate-900/80 rounded-lg px-3 py-1.5 flex items-center gap-2">
+                        <span id="smiley-counter" class="text-xs font-semibold text-amber-400 shrink-0">
+                            Speed⚡Rewards:
+                        </span>
+                        <span id="smiley-icons" class="text-base overflow-x-auto whitespace-nowrap max-w-[140px] sm:max-w-[200px]"></span>
+                    </div>
+                    
+                    <!-- MTC Challenge Button -->
+                    <button id="start-challenge" class="px-3 py-1.5 bg-rose-600 hover:bg-rose-500 active:scale-95 text-xs font-bold text-white rounded-lg shadow-md shadow-rose-950/50 transition flex items-center gap-1 shrink-0">
+                        <span>⚡</span>
+                        <span>MTC</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Grid (Split Layout: Quiz on Left, Assistant on Right) -->
+    <main class="w-full flex-1 grid grid-cols-1 lg:grid-cols-12 gap-3 min-h-0 overflow-hidden relative">
+        
+        <!-- LEFT COLUMN: Main Quiz Card (Expands to 12 cols when chat is minimized) -->
+        <section id="quiz-section" class="lg:col-span-12 flex flex-col h-full min-h-0 transition-all duration-300">
+            <div class="glow-card border border-slate-800 p-4 sm:p-5 rounded-xl shadow-xl flex flex-col h-full overflow-hidden relative">
+                
+                <!-- Dynamic Timed Challenge Overlay Container -->
+                <div id="challenge-container" class="bg-rose-950/60 border border-rose-800/80 p-3 rounded-lg mb-3 text-center shrink-0" style="display: none;">
+                    <div id="challenge-status" class="text-base font-bold text-rose-300" style="transition: opacity 2s;"></div>
+                    <div class="flex items-center justify-center gap-4 mt-1">
+                        <div id="challenge-timer" class="text-xs font-mono font-bold text-rose-400 bg-rose-900/40 px-2.5 py-1 rounded border border-rose-800/40"></div>
+                        <div id="correct-answer-counter" class="text-xs font-mono font-bold text-emerald-400 bg-emerald-900/40 px-2.5 py-1 rounded border border-emerald-800/40">
+                            Correct Answers: 0
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Top Row: Score, Level Displays & Compact Assistant Trigger -->
+                <div class="flex items-center justify-between bg-slate-900/90 p-3 rounded-lg border border-slate-800/80 shrink-0 gap-2 mb-4">
+                    <div class="flex items-center gap-4">
+                        <div id="score-container" class="flex items-center gap-2">
+                            <span class="text-xs uppercase tracking-wider text-slate-400 font-bold">Score</span>
+                            <span id="score" class="text-lg font-extrabold text-emerald-400 font-mono">0</span>
+                        </div>
+                        <div id="level-container" class="flex items-center gap-2">
+                            <span class="text-xs uppercase tracking-wider text-slate-400 font-bold">Level</span>
+                            <span id="level" class="text-lg font-extrabold text-indigo-400 font-mono">1</span>
+                        </div>
+                    </div>
+
+                    <!-- Compact AI Assistant Trigger Button -->
+                    <button id="toggle-chat" class="px-3 py-1.5 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 text-xs font-semibold rounded-lg transition flex items-center gap-1.5 shrink-0 shadow-sm">
+                        <span>💬</span>
+                        <span id="toggle-chat-label">AI Assistant</span>
+                    </button>
+                </div>
+
+                <!-- Combined Focus Area: Question + Answer Input Unit (Shifted to Upper-Middle) -->
+                <div class="mt-4 sm:mt-6 mb-auto py-6 px-4 bg-slate-900/60 rounded-xl border border-slate-800/80 shadow-inner flex flex-col items-center justify-center max-w-lg mx-auto w-full space-y-5">
+                    <!-- Question Prompt -->
+                    <div id="question" class="text-2xl sm:text-4xl font-extrabold text-center text-slate-100 tracking-wide">
+                        What is 5 + 3?
+                    </div>
+
+                    <!-- Input and Submit Block (Tight & Centered) -->
+                    <div class="w-full space-y-3">
+                        <div class="flex flex-row gap-2 justify-center max-w-sm mx-auto w-full">
+                            <input id="answer" type="number" class="w-full max-w-[200px] px-4 py-2 bg-slate-950 border border-slate-700 text-white placeholder-slate-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent font-mono text-lg text-center transition" placeholder="Answer">
+                            <button id="submit" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white text-sm font-semibold rounded-lg shadow-md shadow-indigo-950/50 transition shrink-0">
+                                Submit
+                            </button>
+                        </div>
+
+                        <!-- Feedback and AI Advice Messaging -->
+                        <div class="min-h-[2.5rem] flex flex-col justify-center items-center text-center px-2">
+                            <span id="feedback" class="text-base font-bold transition-all"></span>
+                            <span id="ai-advice" class="text-xs font-medium text-sky-400 leading-tight"></span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- RIGHT COLUMN: Math Assistant Panel (Hidden/Minimized until expanded) -->
+        <section id="assistant-section" class="hidden lg:col-span-5 flex-col h-full min-h-0 transition-all duration-300">
+            <div class="chat-container h-full bg-slate-900/95 border border-slate-800 p-4 rounded-xl shadow-xl flex flex-col justify-between overflow-hidden">
+                <!-- Chat Window Header -->
+                <div class="flex items-center justify-between pb-2 border-b border-slate-800/80 shrink-0">
+                    <div class="flex items-center gap-2">
+                        <div class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></div>
+                        <span class="text-sm font-bold text-slate-200">AI Math Assistant</span>
+                    </div>
+                    <!-- Reduce / Close Button inside expanded panel -->
+                    <button id="close-chat" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-md border border-slate-700 transition flex items-center gap-1">
+                        <span>✕</span>
+                        <span>Minimize</span>
+                    </button>
+                </div>
+
+                <!-- Chat Content Container -->
+                <div id="chat-container" class="mt-3 flex-1 flex flex-col min-h-0 overflow-hidden" style="display: none;">
+                    <h2 class="text-xs font-semibold text-emerald-400 mb-2 flex items-center gap-1.5 shrink-0">
+                        <span>🔍</span> Interrogate AI on Student Performance Data
+                    </h2>
+
+                    <!-- Chat Conversation Display Box -->
+                    <div id="chat-conversation" class="flex-1 mb-3 p-2.5 bg-slate-950/90 border border-slate-800 text-slate-200 rounded-lg space-y-2"></div>
+
+                    <!-- Chat Input and Controls -->
+                    <div class="chat-input-container shrink-0">
+                        <textarea id="chat-input" rows="1" class="w-full p-2.5 bg-slate-950 border border-slate-800 text-slate-100 placeholder-slate-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none text-xs" placeholder="Ask AI tutor about performance..."></textarea>
+                        <button id="chat-submit" class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg transition shrink-0 shadow-md shadow-emerald-950/50">
+                            Send
+                        </button>
+                    </div>
+                    <!-- Hidden error display fallback -->
+                    <div id="chat-response" class="hidden text-xs text-rose-400 mt-1"></div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- STICKY FOOTER: AI-Controlled Metrics Bar (Fixed at Page Bottom) -->
+    <footer class="fixed bottom-0 left-0 right-0 z-40 bg-slate-950/95 border-t border-slate-800 backdrop-blur-md px-4 py-2.5">
+        <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2 text-xs">
+            <span class="font-bold text-slate-300 flex items-center gap-1.5 shrink-0">
+                <span class="w-2 h-2 rounded-full bg-indigo-400"></span>
+                AI Metrics:
+            </span>
+            <div class="flex flex-wrap items-center gap-4 text-slate-400">
+                <p>Level Changes: <span id="level-changes" class="font-mono font-bold text-indigo-300">0</span></p>
+                <p>Time Threshold: <span id="time-threshold" class="font-mono font-bold text-amber-300">5</span>s</p>
+                <p>Threshold Changes: <span id="threshold-changes" class="font-mono font-bold text-amber-300">0</span></p>
+                <p>Challenges Triggered: <span id="challenge-count" class="font-mono font-bold text-rose-300">0</span></p>
+            </div>
+        </div>
+    </footer>
+
+    <script type="module">
+        // Theme toggle logic
+        const themeToggleBtn = document.getElementById('theme-toggle');
+        const themeIcon = document.getElementById('theme-icon');
+
+        function toggleTheme() {
+            document.body.classList.toggle('light-theme');
+            const isLight = document.body.classList.contains('light-theme');
+            themeIcon.textContent = isLight ? '🌙' : '☀️';
+            localStorage.setItem('math_app_theme', isLight ? 'light' : 'dark');
+        }
+
+        if (localStorage.getItem('math_app_theme') === 'light') {
+            document.body.classList.add('light-theme');
+            if (themeIcon) themeIcon.textContent = '🌙';
+        }
+
+        if (themeToggleBtn) {
+            themeToggleBtn.addEventListener('click', toggleTheme);
+        }
+
+        // Function to generate random integer between min and max, inclusive
+        function getRandomInt(min, max) {
+            return Math.floor(Math.random() * (max - min + 1)) + min;
+        }
+
+        // Define different types of questions
+        const questionTypes = ['simple', 'largeNumbers', 'carry'];
+
+        // Track number of questions answered
+        let questionsAnswered = 0;
+        let startTime;
+        let currentTimeThreshold = 5;  // Start with default 5 seconds
+        let isChallengeActive = false;  // Flag to track if timed challenge is active
+        let challengeInterval = null;   // Interval ID reference
+        let questionsAnsweredInChallenge = 0;  // Total questions in challenge
+        let correctQuestionsInChallenge = 0;  // Correct questions in challenge
+
+        // Button reference for Timed Challenge
+        const startChallengeButton = document.getElementById('start-challenge');
+
+        // Store entire conversation history
+        let conversationHistory = [];
+
+        // Define system message prompt sent at initial launch
+        const systemMessage = {
+            role: 'system',
+            content: `
+                You are a helpful math tutor designed for children. Your task is to assess an 8-year-old student answering math questions. The student starts at level 1, with level 1 being the easiest and level 10 the hardest.
+
+                Your job is to decide if the student should move up a level (++), stay in the same level, or move down a level (--), based on their performance.
+
+                The rules for level adjustment are:
+                - **Increase the level (++)**: Include "++" in your response if the student answers **at least 4 questions in a row correctly** at the current level.
+                - **Decrease the level (--)**: Include "--" in your response if the student answers **at least 4 questions in a row incorrectly** at the current level.
+                - **Stay at the same level**: If the student has a mix of correct and incorrect answers within the current level, do not include "++" or "--". Keep the student at the same level.
+
+                Make sure to always include "++" if increasing the level or "--" if decreasing the level, at the end of your response.
+
+                After every question, analyze the student's recent performance at their current level. If they meet the criteria for moving up or down, include "++" or "--" in your response accordingly. If they do not meet these criteria, provide feedback without changing their level.
+
+                Keep your responses short, simple, and encouraging. Use no more than 3 sentences per response, and avoid using technical language.
+                
+                The student has a special reward: if they answer a question correctly within a certain time threshold, they earn a lightning emoji (⚡). 
+                You can dynamically adjust this time threshold based on the student's performance, but be strict with when you make adjustments:
+                
+                - Only lower the time threshold (include "^^" in your response) if the student answers at least **4 questions in a row** quickly and correctly, showing consistent fast performance.
+                - Only increase the time threshold (include "vv" in your response) if the student takes longer than the current threshold on at least **4 questions in a row**, showing consistent slow performance.
+
+                Do not adjust the time threshold unless the student's performance meets these strict criteria. 
+
+                Additionally, continue using "++" to indicate a level increase and "--" for a level decrease based on the student's overall performance.
+                
+                You need to monitor the student's response time and engagement:
+        
+                - If the student's typical response time in a particular level is around 6 seconds, but they start taking much longer (e.g., 20-30 seconds), this could indicate boredom or lack of motivation.
+                - If you detect this pattern, suggest a timed challenge mode by including "##challenge##" in your response. The timed challenge will require the student to answer 10 questions within 60 seconds to avoid penalties or earn rewards.
+                -However, please note that the time threshold in the student data is not a max time that the student has to answer, but a time frame to award the emoji. So if they take longer than the time threshold consistently, then it is better to increase the time threshold.
+                Only invoke the challenge if the time delay is much longer than their usual time taken to answer a question, for example 4 or 5 times longer than usual.
+                
+                Continue providing feedback on level changes (using ++ or --) and dynamic time threshold adjustments (using ^^ or vv).
+            `
+        };
+
+        // Generate questions categorized by level and type
+        const questions = [];
+        for (let i = 1; i <= 10; i++) {
+            for (let j = 0; j < 10; j++) {
+                let num1 = getRandomInt(i * 1, i * 10);
+                let num2 = getRandomInt(i * 1, i * 10);
+                let questionType = num1 >= 10 && num2 >= 10 ? 'largeNumbers' : (num1 + num2 > 10 ? 'carry' : 'simple');
+                
+                questions.push({ 
+                    question: `What is ${num1} + ${num2}?`, 
+                    answer: num1 + num2, 
+                    type: questionType,
+                    level: i
+                });
+            }
+        }
+
+        // Performance history for question types
+        const performanceHistory = {
+            simple: { correct: 0, incorrect: 0 },
+            largeNumbers: { correct: 0, incorrect: 0 },
+            carry: { correct: 0, incorrect: 0 }
+        };
+
+        let score = 0;
+        let currentLevel = 1;
+        let smileyCount = 0;
+        
+        // Track AI metrics
+        let levelChanges = 0;
+        let timeThresholdChanges = 0;
+        let timedChallengesTriggered = 0;
+        
+        // UI Elements for metrics
+        const levelChangesElement = document.getElementById('level-changes');
+        const timeThresholdElement = document.getElementById('time-threshold');
+        const thresholdChangesElement = document.getElementById('threshold-changes');
+        const challengeCountElement = document.getElementById('challenge-count');
+
+        const scoreElement = document.getElementById('score');
+        const levelElement = document.getElementById('level');
+        const questionElement = document.getElementById('question');
+        const answerElement = document.getElementById('answer');
+        const feedbackElement = document.getElementById('feedback');
+        const aiAdviceElement = document.getElementById('ai-advice');
+        const submitButton = document.getElementById('submit');
+
+        let currentQuestion = {};
+        
+        function resetQuestionTimer() {
+            startTime = new Date();
+            console.log('Question timer reset due to chat toggle.');
+        }
+        
+        // Toggle button and chat container elements
+        const toggleChatButton = document.getElementById('toggle-chat');
+        const closeChatButton = document.getElementById('close-chat');
+        const toggleChatLabel = document.getElementById('toggle-chat-label');
+        const quizSection = document.getElementById('quiz-section');
+        const assistantSection = document.getElementById('assistant-section');
+        const chatContainer = document.querySelector('.chat-container');
+        const chatContent = document.getElementById('chat-container');
+        
+        function expandChat() {
+            quizSection.classList.remove('lg:col-span-12');
+            quizSection.classList.add('lg:col-span-7');
+            
+            assistantSection.classList.remove('hidden');
+            assistantSection.classList.add('flex');
+            
+            chatContent.style.display = 'flex';
+            toggleChatLabel.textContent = 'Minimize Chat';
+            chatContainer.classList.add('chat-opened');
+            resetQuestionTimer();
+        }
+
+        function collapseChat() {
+            chatContent.style.display = 'none';
+            assistantSection.classList.add('hidden');
+            assistantSection.classList.remove('flex');
+            
+            quizSection.classList.remove('lg:col-span-7');
+            quizSection.classList.add('lg:col-span-12');
+            
+            toggleChatLabel.textContent = 'AI Assistant';
+            chatContainer.classList.remove('chat-opened');
+            resetQuestionTimer();
+        }
+
+        toggleChatButton.addEventListener('click', function () {
+            if (chatContent.style.display === 'none') {
+                expandChat();
+            } else {
+                collapseChat();
+            }
+        });
+
+        if (closeChatButton) {
+            closeChatButton.addEventListener('click', collapseChat);
+        }
+
+        function loadQuestion() {
+            const availableQuestions = questions.filter(q => q.level === currentLevel);
+
+            if (availableQuestions.length === 0) {
+                console.error('No available questions for current level.');
+                return;
+            }
+
+            const randomIndex = getRandomInt(0, availableQuestions.length - 1);
+            currentQuestion = availableQuestions[randomIndex];
+
+            questionElement.textContent = currentQuestion.question;
+            answerElement.value = '';
+            
+            startTime = new Date();
+        }
+
+        function updateScore() {
+            scoreElement.textContent = score;
+        }
+
+        function updateLevel() {
+            levelElement.textContent = currentLevel;
+        }
+
+        // Fetch OpenAI response via PHP backend
+        async function getAIResponse(conversationMessages) {
+            try {
+                const response = await fetch('openai.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ conversationMessages })
+                });
+
+                const data = await response.json();
+                console.log('AI Response:', data);
+                return data;
+
+            } catch (error) {
+                console.error('Error fetching AI response:', error);
+            }
+        }
+        
+        // Analyze performance and request advice
+        async function analyzePerformance(isCorrect, questionType, performanceHistory, studentAnswer, timeTaken, questionSnapshot) {
+            if (isCorrect) {
+                performanceHistory[questionType].correct++;
+            } else {
+                performanceHistory[questionType].incorrect++;
+            }
+            
+            const q = questionSnapshot || currentQuestion;
+            conversationHistory.push({
+                role: 'user',
+                content: `Question: ${q.question}. Student's answer: ${studentAnswer}. Correct answer: ${q.answer}. Level: ${currentLevel}. Time taken: ${timeTaken} seconds. Current time threshold: ${currentTimeThreshold} seconds.`
+            });
+
+            if (questionsAnswered < 5) {
+                return '';
+            }
+
+            const conversationMessages = [systemMessage, ...conversationHistory];
+            const data = await getAIResponse(conversationMessages);
+
+            const advice = data.choices[0].message.content.trim();
+            console.log('AI Advice:', advice);
+            
+            if (advice.includes('##challenge##')) {
+                timedChallengesTriggered++;
+                challengeCountElement.textContent = timedChallengesTriggered;
+                startTimedChallenge();
+            }
+            
+            if (advice.includes('^^')) {
+                currentTimeThreshold = Math.max(3, currentTimeThreshold - 1);
+            } else if (advice.includes('vv')) {
+                currentTimeThreshold = Math.min(10, currentTimeThreshold + 1);
+            }
+            
+            if (advice.includes('++')) {
+                currentLevel = Math.min(currentLevel + 1, 10);
+                levelChanges++;
+                levelChangesElement.textContent = levelChanges;
+            } else if (advice.includes('--')) {
+                currentLevel = Math.max(currentLevel - 1, 1);
+                levelChanges++;
+                levelChangesElement.textContent = levelChanges;
+            }
+            
+            updateLevel();
+            
+            if (advice.includes('^^')) {
+                currentTimeThreshold = Math.max(3, currentTimeThreshold - 1);
+                timeThresholdChanges++;
+                timeThresholdElement.textContent = currentTimeThreshold;
+                thresholdChangesElement.textContent = timeThresholdChanges;
+            } else if (advice.includes('vv')) {
+                currentTimeThreshold = Math.min(10, currentTimeThreshold + 1);
+                timeThresholdChanges++;
+                timeThresholdElement.textContent = currentTimeThreshold;
+                thresholdChangesElement.textContent = timeThresholdChanges;
+            }
+
+            conversationHistory.push({
+                role: 'assistant',
+                content: advice
+            });
+
+            return advice;
+        }
+
+        // Check answer logic
+        function checkAnswer() {
+            const studentAnswer = parseInt(answerElement.value, 10);
+            const correctAnswer = currentQuestion.answer;
+            const isCorrect = studentAnswer === correctAnswer;
+            questionsAnswered++;
+            
+            const endTime = new Date();
+            const timeTaken = (endTime - startTime) / 1000;
+            
+            awardSmileyIfFast(timeTaken, isCorrect);
+
+            if (isCorrect) {
+                score++;
+                feedbackElement.textContent = 'Correct!';
+                feedbackElement.classList.add('text-emerald-400');
+                feedbackElement.classList.remove('text-rose-500');
+            } else {
+                feedbackElement.textContent = 'Incorrect!';
+                feedbackElement.classList.add('text-rose-500');
+                feedbackElement.classList.remove('text-emerald-400');
+            }
+
+            updateScore();
+
+            // Capture current question snapshot before loading next question
+            const questionSnapshot = currentQuestion;
+
+            // Load next question instantly so student doesn't wait
+            loadQuestion();
+
+            // Run AI analysis asynchronously in background
+            if (questionsAnswered >= 1) {
+                analyzePerformance(isCorrect, questionSnapshot.type, performanceHistory, studentAnswer, timeTaken, questionSnapshot).then(advice => {
+                    if (advice) {
+                        aiAdviceElement.textContent = advice;
+                    }
+                });
+            }
+        }
+        
+        // Award speed rewards
+        function awardSmileyIfFast(timeTaken, isCorrect) {
+            if (isCorrect && timeTaken <= currentTimeThreshold) {
+                smileyCount++;
+                const smileyIcons = document.getElementById('smiley-icons');
+                smileyIcons.innerHTML += '⚡';
+            }
+        }
+
+        answerElement.addEventListener('keypress', function(event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                if (isChallengeActive) {
+                    checkAnswerDuringChallenge();
+                } else {
+                    checkAnswer();
+                }
+            }
+        });
+        
+        submitButton.addEventListener('click', checkAnswer);
+        
+        const chatInput = document.getElementById('chat-input');
+        const chatSubmit = document.getElementById('chat-submit');
+        const chatResponse = document.getElementById('chat-response');
+
+        // Chat query handler
+        async function handleChatQuery() {
+            const query = chatInput.value.trim();
+        
+            if (query.length === 0) {
+                if (chatResponse) chatResponse.textContent = "Please enter a query.";
+                return;
+            }
+        
+            conversationHistory.push({
+                role: 'user',
+                content: query
+            });
+        
+            const conversationMessages = [systemMessage, ...conversationHistory];
+            document.getElementById('chat-conversation').innerHTML += `<div class="chat-message user-message"><strong>You:</strong> ${query}</div>`;
+            chatInput.value = '';
+        
+            try {
+                const data = await getAIResponse(conversationMessages);
+                const aiReply = data.choices[0].message.content.trim();
+        
+                document.getElementById('chat-conversation').innerHTML += `<div class="chat-message ai-message"><strong>AI:</strong> ${aiReply}</div>`;
+                conversationHistory.push({
+                    role: 'assistant',
+                    content: aiReply
+                });
+        
+            } catch (error) {
+                console.error('Error with OpenAI API:', error);
+                document.getElementById('chat-conversation').innerHTML += `<div class="chat-message ai-message"><strong>AI:</strong> There was an issue retrieving AI advice. Please try again.</div>`;
+            }
+        
+            const chatConversation = document.getElementById('chat-conversation');
+            chatConversation.scrollTop = chatConversation.scrollHeight;
+        }
+        
+        chatSubmit.addEventListener('click', handleChatQuery);
+        chatInput.addEventListener('keypress', function(event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                handleChatQuery();
+            }
+        });
+
+        // Start timed challenge
+        function startTimedChallenge() {
+            if (isChallengeActive) return;
+
+            isChallengeActive = true;
+            let timeRemaining = 60;
+            questionsAnsweredInChallenge = 0;
+            correctQuestionsInChallenge = 0;
+            const totalChallengeQuestions = 10;
+
+            document.getElementById('score-container').style.display = 'none';
+            document.getElementById('level-container').style.display = 'none';
+            document.getElementById('correct-answer-counter').textContent = `Correct Answers: 0`;
+            document.getElementById('challenge-container').style.display = 'block';
+            document.getElementById('challenge-status').style.opacity = '1';
+
+            document.body.style.backgroundColor = '#450a0a';
+
+            const timerLeft = document.createElement('img');
+            const timerRight = document.createElement('img');
+            timerLeft.src = 'https://upload.wikimedia.org/wikipedia/commons/7/7a/Alarm_Clock_GIF_Animation_High_Res.gif';
+            timerRight.src = 'https://upload.wikimedia.org/wikipedia/commons/7/7a/Alarm_Clock_GIF_Animation_High_Res.gif';
+
+            timerLeft.id = 'timer-left';
+            timerRight.id = 'timer-right';
+
+            timerLeft.style.position = 'fixed';
+            timerLeft.style.left = '10px';
+            timerLeft.style.top = '50%';
+            timerLeft.style.transform = 'translateY(-50%)';
+            timerLeft.style.width = '140px';
+            timerLeft.style.zIndex = '50';
+            timerLeft.style.borderRadius = '12px';
+            timerLeft.style.opacity = '0.85';
+
+            timerRight.style.position = 'fixed';
+            timerRight.style.right = '10px';
+            timerRight.style.top = '50%';
+            timerRight.style.transform = 'translateY(-50%)';
+            timerRight.style.width = '140px';
+            timerRight.style.zIndex = '50';
+            timerRight.style.borderRadius = '12px';
+            timerRight.style.opacity = '0.85';
+
+            document.body.appendChild(timerLeft);
+            document.body.appendChild(timerRight);
+
+            document.getElementById('challenge-status').textContent = `Timed Challenge: Answer ${totalChallengeQuestions} questions in ${timeRemaining} seconds!`;
+
+            if (challengeInterval) clearInterval(challengeInterval);
+
+            challengeInterval = setInterval(() => {
+                timeRemaining--;
+                document.getElementById('challenge-timer').textContent = `Time Left: ${timeRemaining}s`;
+
+                if (timeRemaining <= 0 || questionsAnsweredInChallenge >= totalChallengeQuestions) {
+                    clearInterval(challengeInterval);
+                    endTimedChallenge(questionsAnsweredInChallenge, totalChallengeQuestions);
+                }
+            }, 1000);
+
+            submitButton.removeEventListener('click', checkAnswer);
+            submitButton.addEventListener('click', checkAnswerDuringChallenge);
+        }
+
+        // End timed challenge
+        function endTimedChallenge(questionsAnsweredInChallenge, totalChallengeQuestions) {
+            const challengeResult = document.getElementById('challenge-status');
+            const challengeContainer = document.getElementById('challenge-container');
+
+            challengeResult.textContent = `Challenge finished! You answered ${questionsAnsweredInChallenge} questions, with ${correctQuestionsInChallenge} correct answers.`;
+
+            document.getElementById('score-container').style.display = 'flex';
+            document.getElementById('level-container').style.display = 'flex';
+            document.getElementById('ai-advice').textContent = '';
+
+            let success = correctQuestionsInChallenge >= totalChallengeQuestions;
+
+            const gifImage = document.createElement('img');
+            gifImage.style.position = 'fixed';
+            gifImage.style.top = '50%';
+            gifImage.style.left = '50%';
+            gifImage.style.transform = 'translate(-50%, -50%)';
+            gifImage.style.zIndex = '1000';
+            gifImage.style.width = '200px';
+            gifImage.style.borderRadius = '16px';
+            gifImage.style.boxShadow = '0 20px 25px -5px rgba(0,0,0,0.5)';
+
+            if (success) {
+                gifImage.src = 'https://i.gifer.com/8OJO.gif';
+            } else {
+                gifImage.src = 'https://media1.tenor.com/m/gauSQOMqvlgAAAAd/thumbs-down.gif';
+            }
+
+            document.body.appendChild(gifImage);
+
+            setTimeout(() => {
+                gifImage.remove();
+            }, 5000);
+
+            setTimeout(() => {
+                challengeResult.style.opacity = '0';
+                challengeContainer.style.display = 'none';
+            }, 5000);
+
+            document.body.style.backgroundColor = '#0b0f17';
+
+            const timerLeft = document.getElementById('timer-left');
+            const timerRight = document.getElementById('timer-right');
+            if (timerLeft) timerLeft.remove();
+            if (timerRight) timerRight.remove();
+
+            submitButton.removeEventListener('click', checkAnswerDuringChallenge);
+            submitButton.addEventListener('click', checkAnswer);
+
+            isChallengeActive = false;
+            clearInterval(challengeInterval);
+            challengeInterval = null;
+        }
+
+        // Answer processing during timed challenge
+        async function checkAnswerDuringChallenge() {
+            const studentAnswer = parseInt(answerElement.value, 10);
+            const correctAnswer = currentQuestion.answer;
+            const isCorrect = studentAnswer === correctAnswer;
+
+            const endTime = new Date();
+            const timeTaken = (endTime - startTime) / 1000;
+            awardSmileyIfFast(timeTaken, isCorrect);
+
+            questionsAnsweredInChallenge++;  
+
+            if (isCorrect) {
+                correctQuestionsInChallenge++;
+                document.getElementById('correct-answer-counter').textContent = `Correct Answers: ${correctQuestionsInChallenge}`;
+            }
+
+            updateScore();
+            loadQuestion();
+        }
+
+        startChallengeButton.addEventListener('click', startTimedChallenge);
+
+        loadQuestion();
+    </script>
+</body>
+</html>
